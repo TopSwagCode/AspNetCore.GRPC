@@ -118,3 +118,53 @@ Last thing to check out is how routing is handled. You can find this in Startup.
 Well doesn't make much sense to create a gRPC server without also showing how to interact with it. We can start by creating a simple Console app.
 
 ![console](assets/console.png)
+
+Start by adding a new folder called Protos like the one we had on the server side. And copy the file over. This time you should go in and edit the csproj file and add an ItemGroup as shown below. This time instead of being an gRPC server, it's a client.
+
+```proto
+  <ItemGroup>
+    <Protobuf Include="Protos\greet.proto" GrpcServices="Client" />
+  </ItemGroup>
+```
+
+Then install the following nuget packages to support gRPC:
+
+* Google.Protobuf
+* Grpc.Net.Client
+* Grpc.Tools
+
+This will generate a bunch of boilerplate client code that you don't have to think about and simply use. With this done you can create a simple client call to our server. Let's to that by opening the Program.cs and use the auto generated client.
+
+```csharp
+using Grpc.Net.Client;
+using System;
+using System.Threading.Tasks;
+using TopSwagCode.GRPC.Server;
+using static TopSwagCode.GRPC.Server.Greeter;
+
+namespace TopSwagCode.GRPC.Client
+{
+    class Program
+    {
+        static async Task Main(string[] args)
+        {
+            // The port number(5001) must match the port of the gRPC server.
+            using var channel = GrpcChannel.ForAddress("https://localhost:5001");
+
+            await GreeterRequest(channel);
+        }
+
+        private static async Task GreeterRequest(GrpcChannel channel)
+        {
+            var client = new GreeterClient(channel);
+            var reply = await client.SayHelloAsync(
+                                new HelloRequest { Name = "GreeterClient" });
+            Console.WriteLine("Greeting: " + reply.Message);
+            Console.WriteLine("Press any key to exit...");
+
+            Console.ReadKey();
+        }
+    }
+}
+
+```
