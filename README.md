@@ -4,7 +4,7 @@
 
 ## Overview
 
-gRPC is an open source remote procedure call (RPC) system initially developed at Google in 2015. gRPC does not! stand for Google Remote Procedure Call, but "gRPC Remote Procedure Calls". Below I have quoted their own page to give a small overview of what it is.
+gRPC is an open source remote procedure call (RPC) system initially developed at Google in 2015. gRPC does not! stands for Google Remote Procedure Call, but "gRPC Remote Procedure Calls". Below I have quoted their own page to give a small overview of what it is.
 
 > In gRPC, a client application can directly call a method on a server application on a different machine as if it were a local object, making it easier for you to create distributed applications and services. As in many RPC systems, gRPC is based around the idea of defining a service, specifying the methods that can be called remotely with their parameters and return types. On the server side, the server implements this interface and runs a gRPC server to handle client calls. On the client side, the client has a stub (referred to as just a client in some languages) that provides the same methods as the server.
 > ![grpc](assets/grpc-example.svg)
@@ -49,7 +49,7 @@ Creating a new project using the template we can find a .proto file that looks l
 
 ```
 
-If we look inside the csproj file, we can see the proto file is included as a protobuf gRPC Service running on a server. This will generate code for us to easy implementing a service.
+If we look inside the csproj file, we can see the proto file is included as a protobuf gRPC Service running on a server. This will generate code for us to easily implement a service.
 
 ```xml
     <ItemGroup>
@@ -57,7 +57,7 @@ If we look inside the csproj file, we can see the proto file is included as a pr
     </ItemGroup>
 ```
 
-We can take a look at the code generated. Small part can be seen in screenshot below.
+We can take a look at the code generated. Small part can be seen in the screenshot below.
 
 ![generated](assets/generated.png)
 
@@ -82,7 +82,7 @@ Now we can check out the implementation of the service logic that uses the gener
     }
 ```
 
-Last thing to check out is how routing is handled. You can find this in Startup.cs and it looks similar to how normal API are setup.
+Last thing to check out is how routing is handled. You can find this in Startup.cs and it looks similar to how normal API's are set up.
 
 ```csharp
     public class Startup
@@ -137,7 +137,7 @@ Then install the following nuget packages to support gRPC:
 * Grpc.Net.Client
 * Grpc.Tools
 
-Then build the code. This will generate a bunch of boilerplate client code that you don't have to think about and simply use. With this done you can create a simple client call to our server. Let's to that by opening the Program.cs and use the auto generated client.
+Then build the code. This will generate a bunch of boilerplate client code that you don't have to think about and simply use. With this done you can create a simple client call to our server. Let's do that by opening the Program.cs and use the auto generated client.
 
 ```csharp
 using Grpc.Net.Client;
@@ -220,7 +220,7 @@ string summary = 4;
 }
 ```
 
-Afterwards we need to remember editting the csproj file to include the proto file, like the greet.proto.
+Afterwards we need to remember editing the csproj file to include the proto file, like the greet.proto.
 
 ```xml
   <ItemGroup>
@@ -229,7 +229,7 @@ Afterwards we need to remember editting the csproj file to include the proto fil
   </ItemGroup>
 ```
 
-This will enable the auto generation of server code, which will help us creating the Weather service. Creating WeatherForecastService.cs and implementing the generated code will look something like this:
+This will enable the auto generation of server code, which will help us creating the Weather service. Create WeatherForecastService.cs and implementing the generated code will look something like this:
 
 ```csharp
     public class WeatherForecastService : WeatherForecasts.WeatherForecastsBase
@@ -241,7 +241,7 @@ This will enable the auto generation of server code, which will help us creating
     }
 ```
 
-Now it is up to us to implement the logic for the gRPC service to return a response stream. I borrow the logic that exists in the Api Template for AspNet Core for generating weather forecasts. Just instead of returning a lists of weather forecasts, I will return them one by one as they are generated. This way the client could start working with the data as they drop in and don't have to wait for the entire response to be build before starting.
+Now it is up to us to implement the logic for the gRPC service to return a response stream. I borrow the logic that exists in the Api Template for AspNet Core for generating weather forecasts. Just instead of returning a list of weather forecasts, I will return them one by one as they are generated. This way the client could start working with the data as they drop in and don't have to wait for the entire response to be built before starting.
 
 ```csharp
 using System;
@@ -327,7 +327,7 @@ We have more or less been through how to implement a new client, as we did it fo
 * We build the solution to get auto generated code.
 * We use the auto generated client to call the server.
 
-Only thing different from greet is now we are receiving a stream of data instead of a single result. This will let us play around with a "new" c# 8 feature [Async Enumerables](https://docs.microsoft.com/en-us/archive/msdn-magazine/2019/november/csharp-iterating-with-async-enumerables-in-csharp-8).
+Only thing different from greet now is we are receiving a stream of data instead of a single result. This will let us play around with a "new" c# 8 feature [Async Enumerables](https://docs.microsoft.com/en-us/archive/msdn-magazine/2019/november/csharp-iterating-with-async-enumerables-in-csharp-8).
 
 ```csharp
 using Google.Protobuf.WellKnownTypes;
@@ -398,5 +398,5 @@ Running client and server should result in something like the following
 
 ![stream](assets/stream.gif)
 
-In the above example we can see we create a client that get's as much data as possible in a 2 second timespan. If the server is not done in those 2 seconds we get and RpcException with StatusCode Cancelled. Sadly as of creating this repository there is an open issue on HTTP/2, that forces us to also catch IOException.
+In the above example we can see we create a client that gets as much data as possible in a 2 second timespan. If the server is not done in those 2 seconds we get an RpcException with StatusCode Cancelled. Sadly as of creating this repository there is an open issue on HTTP/2, that forces us to also catch IOException.
 
