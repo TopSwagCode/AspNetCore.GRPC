@@ -7,7 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TopSwagCode.GRPC.Server;
 using static TopSwagCode.GRPC.Server.Greeter;
-using static WeatherForecast.WeatherForecasts;
+using static TopSwagCode.GRPC.Server.WeatherForecasts;
 
 namespace TopSwagCode.GRPC.Client
 {
@@ -20,23 +20,26 @@ namespace TopSwagCode.GRPC.Client
 
             await GreeterRequest(channel);
             await WeatherForecastsRequest(channel);
+
+            Console.WriteLine("Press any key to exit...");
+            Console.ReadKey();
         }
 
         private static async Task GreeterRequest(GrpcChannel channel)
         {
             var client = new GreeterClient(channel);
-            var reply = await client.SayHelloAsync(
-                                new HelloRequest { Name = "GreeterClient" });
+            var reply = await client.SayHelloAsync( new HelloRequest { Name = "GreeterClient" });
+
             Console.WriteLine("Greeting: " + reply.Message);
             Console.WriteLine("Press any key to continue...");
-
             Console.ReadKey();
         }
+
         private static async Task WeatherForecastsRequest(GrpcChannel channel)
         {
             var client = new WeatherForecastsClient(channel);
 
-            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2)); // If slower than 2 seconds. Stop request.
+            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
             var streamingCall = client.GetWeatherStream(new Empty(), cancellationToken: cts.Token);
 
             try
@@ -54,10 +57,6 @@ namespace TopSwagCode.GRPC.Client
             {
                 Console.WriteLine("Client and server disagree on active stream count.");
             }
-
-            Console.WriteLine("Press any key to exit...");
-            Console.ReadKey();
         }
-
     }
 }
