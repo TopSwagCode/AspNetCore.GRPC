@@ -15,6 +15,7 @@ namespace TopSwagCode.GRPC.Server
         };
 
         private readonly ILogger<WeatherForecastService> _logger;
+
         public WeatherForecastService(ILogger<WeatherForecastService> logger)
         {
             _logger = logger;
@@ -47,9 +48,7 @@ namespace TopSwagCode.GRPC.Server
                 {
                     _logger.LogWarning("Stream has been cancelled by the client.");
                 }
-                
             }
         }
     }
-
 }
