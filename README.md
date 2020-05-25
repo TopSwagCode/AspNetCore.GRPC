@@ -1,14 +1,18 @@
 # GRPC.DotnetCore
 
-gRPC stand for 
+![grpc](assets/grpc.jpg)
 
 ## Overview
+
+gRPC is an open source remote procedure call (RPC) system initially developed at Google in 2015. gRPC does not! stand for Google Remote Procedure Call, but "gRPC Remote Procedure Calls". Below I have quoted their own page to give a small overview of what it is.
 
 > In gRPC, a client application can directly call a method on a server application on a different machine as if it were a local object, making it easier for you to create distributed applications and services. As in many RPC systems, gRPC is based around the idea of defining a service, specifying the methods that can be called remotely with their parameters and return types. On the server side, the server implements this interface and runs a gRPC server to handle client calls. On the client side, the client has a stub (referred to as just a client in some languages) that provides the same methods as the server.
 > ![grpc](assets/grpc-example.svg)
 > gRPC clients and servers can run and talk to each other in a variety of environments - from servers inside Google to your own desktop - and can be written in any of gRPC’s supported languages. So, for example, you can easily create a gRPC server in Java with clients in Go, Python, or Ruby. In addition, the latest Google APIs will have gRPC versions of their interfaces, letting you easily build Google functionality into your applications.
 
-Taken from [gRPC.io](https://grpc.io/docs/guides/)
+Quotes taken from [gRPC.io](https://grpc.io/docs/guides/)
+
+I won't spend any time describing the performance of gRPC. There is an awesome blog post by Auth0 that can be read [here.](https://auth0.com/blog/beating-json-performance-with-protobuf/)
 
 ## Working with gRPC in Dotnet Core.
 
@@ -191,7 +195,7 @@ So far I have described the "simple" hello world example. But gRPC has so much m
 >
 >Client- and server-side stream processing is application specific. Since the two streams are independent, the client and server can read and write messages in any order. For example, a server can wait until it has received all of a client’s messages before writing its messages, or the server and client can play “ping-pong” – the server gets a request, then sends back a response, then the client sends another request based on the response, and so on.
 
-### Example Weather forecasts server
+### Example Streaming Weather forecasts server
 
 In this repository I am showing how Server streaming RPC works. I have implemented a simple WeatherForecasts demo that shows a stream of weather forecasts from server to client. Starting with server code first. I will create a new .proto file in the Protos folder. The file will be named `weather.proto`, that looks like the this:
 
@@ -314,7 +318,7 @@ Only one thing left now and that is the route mapping for the weather forecasts 
     });
 ```
 
-### Example Weather forecasts client
+### Example Streaming Weather forecasts client
 
 We have more or less been through how to implement a new client, as we did it for greet.proto.
 
