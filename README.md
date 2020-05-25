@@ -394,9 +394,17 @@ namespace TopSwagCode.GRPC.Client
 }
 ```
 
+In the above example we can see we create a client that gets as much data as possible in a 2 second timespan. If the server is not done in those 2 seconds we get an RpcException with StatusCode Cancelled. Sadly as of creating this repository there is an open issue on HTTP/2, that forces us to also catch IOException.
+
 Running client and server should result in something like the following
 
 ![stream](assets/stream.gif)
 
-In the above example we can see we create a client that gets as much data as possible in a 2 second timespan. If the server is not done in those 2 seconds we get an RpcException with StatusCode Cancelled. Sadly as of creating this repository there is an open issue on HTTP/2, that forces us to also catch IOException.
+I hope this has helped you get started with gRPC with Aspnet Core. Either if you are creating your own service or have to implement a client for an existing service.
 
+Google has a set of services you can start to play with. 
+
+* https://googleapis.github.io/HowToRPC.html
+* https://github.com/googleapis/googleapis
+
+Thats all folks. See you next time :)
