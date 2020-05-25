@@ -1,14 +1,12 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.Extensions.Logging;
-using WeatherForecast;
 
 namespace TopSwagCode.GRPC.Server
 {
+
     public class WeatherForecastService : WeatherForecasts.WeatherForecastsBase
     {
         private static readonly string[] Summaries = new[]
@@ -53,4 +51,5 @@ namespace TopSwagCode.GRPC.Server
             }
         }
     }
+
 }
