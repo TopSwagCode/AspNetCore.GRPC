@@ -133,7 +133,7 @@ Then install the following nuget packages to support gRPC:
 * Grpc.Net.Client
 * Grpc.Tools
 
-This will generate a bunch of boilerplate client code that you don't have to think about and simply use. With this done you can create a simple client call to our server. Let's to that by opening the Program.cs and use the auto generated client.
+Then build the code. This will generate a bunch of boilerplate client code that you don't have to think about and simply use. With this done you can create a simple client call to our server. Let's to that by opening the Program.cs and use the auto generated client.
 
 ```csharp
 using Grpc.Net.Client;
@@ -168,3 +168,231 @@ namespace TopSwagCode.GRPC.Client
 }
 
 ```
+
+Running client and server should result in something like the following
+
+![request response](assets/requestresponse.png)
+
+## Advanced
+
+So far I have described the "simple" hello world example. But gRPC has so much more to offer like: 
+
+### Server streaming RPC
+
+>A server-streaming RPC is similar to a unary RPC, except that the server returns a stream of messages in response to a client’s request. After sending all its messages, the server’s status details (status code and optional status message) and optional trailing metadata are sent to the client. This completes processing on the server side. The client completes once it has all the server’s messages.
+
+### Client streaming RPC
+
+>A client-streaming RPC is similar to a unary RPC, except that the client sends a stream of messages to the server instead of a single message. The server responds with a single message (along with its status details and optional trailing metadata), typically but not necessarily after it has received all the client’s messages.
+
+### Bidirectional streaming RPC
+
+>In a bidirectional streaming RPC, the call is initiated by the client invoking the method and the server receiving the client metadata, method name, and deadline. The server can choose to send back its initial metadata or wait for the client to start streaming messages.
+>
+>Client- and server-side stream processing is application specific. Since the two streams are independent, the client and server can read and write messages in any order. For example, a server can wait until it has received all of a client’s messages before writing its messages, or the server and client can play “ping-pong” – the server gets a request, then sends back a response, then the client sends another request based on the response, and so on.
+
+### Example Weather forecasts server
+
+In this repository I am showing how Server streaming RPC works. I have implemented a simple WeatherForecasts demo that shows a stream of weather forecasts from server to client. Starting with server code first. I will create a new .proto file in the Protos folder. The file will be named `weather.proto`, that looks like the this:
+
+```proto
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+option csharp_namespace = "TopSwagCode.GRPC.Server";
+package WeatherForecast;
+
+service WeatherForecasts {
+rpc GetWeatherStream (google.protobuf.Empty) returns (stream WeatherData);
+}
+
+message WeatherData {
+google.protobuf.Timestamp dateTimeStamp = 1;
+int32 temperatureC = 2;
+int32 temperatureF = 3;
+string summary = 4;
+}
+```
+
+Afterwards we need to remember editting the csproj file to include the proto file, like the greet.proto.
+
+```xml
+  <ItemGroup>
+    <Protobuf Include="Protos\weather.proto" GrpcServices="Server" />
+    <Protobuf Include="Protos\greet.proto" GrpcServices="Server" />
+  </ItemGroup>
+```
+
+This will enable the auto generation of server code, which will help us creating the Weather service. Creating WeatherForecastService.cs and implementing the generated code will look something like this:
+
+```csharp
+    public class WeatherForecastService : WeatherForecasts.WeatherForecastsBase
+    {
+        public override Task GetWeatherStream(Empty request, IServerStreamWriter<WeatherData> responseStream, ServerCallContext context)
+        {
+            return base.GetWeatherStream(request, responseStream, context);
+        }
+    }
+```
+
+Now it is up to us to implement the logic for the gRPC service to return a response stream. I borrow the logic that exists in the Api Template for AspNet Core for generating weather forecasts. Just instead of returning a lists of weather forecasts, I will return them one by one as they are generated. This way the client could start working with the data as they drop in and don't have to wait for the entire response to be build before starting.
+
+```csharp
+using System;
+using System.Threading.Tasks;
+using Google.Protobuf.WellKnownTypes;
+using Grpc.Core;
+using Microsoft.Extensions.Logging;
+
+namespace TopSwagCode.GRPC.Server
+{
+
+    public class WeatherForecastService : WeatherForecasts.WeatherForecastsBase
+    {
+        private static readonly string[] Summaries = new[]
+        {
+            "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
+        };
+
+        private readonly ILogger<WeatherForecastService> _logger;
+        public WeatherForecastService(ILogger<WeatherForecastService> logger)
+        {
+            _logger = logger;
+        }
+
+        public override async Task GetWeatherStream(Empty request, IServerStreamWriter<WeatherData> responseStream, ServerCallContext context)
+        {
+            var rng = new Random();
+            var now = DateTime.UtcNow;
+
+            var i = 0;
+            while (!context.CancellationToken.IsCancellationRequested && i < 20)
+            {
+                await Task.Delay(500); // Gotta look busy
+
+                var forecast = new WeatherData
+                {
+                    DateTimeStamp = Timestamp.FromDateTime(now.AddDays(i++)),
+                    TemperatureC = rng.Next(-20, 55),
+                    Summary = Summaries[rng.Next(Summaries.Length)]
+                };
+
+                _logger.LogInformation("Sending WeatherData response");
+
+                if (!context.CancellationToken.IsCancellationRequested) // Extra guard. Cancellation might have been done while work was been done.
+                {
+                    await responseStream.WriteAsync(forecast);
+                }
+                else
+                {
+                    _logger.LogWarning("Stream has been cancelled by the client.");
+                }
+                
+            }
+        }
+    }
+
+}
+```
+
+In this example you can see the service is always trying to reply with 20 weather forecasts unless the client has cancelled the request. I have put 2 guards up to ensure we don't do any work if the client doesn't accept any new responses. One before we start doing any work and one just when we are about to send the response. The client might have cancelled in those ~500ms we were getting those weather forecasts. Only thing to note here is how to return an element to the response stream is: `await responseStream.WriteAsync(forecast);`
+
+Only one thing left now and that is the route mapping for the weather forecasts service. This is done in startup, just like greet service does it.
+
+```csharp
+    app.UseEndpoints(endpoints =>
+    {
+        endpoints.MapGrpcService<GreeterService>();
+        endpoints.MapGrpcService<WeatherForecastService>();
+
+        endpoints.MapGet("/", async context =>
+        {
+            await context.Response.WriteAsync("Communication with gRPC endpoints must be made through a gRPC client. To learn how to create a client, visit: https://go.microsoft.com/fwlink/?linkid=2086909");
+        });
+    });
+```
+
+### Example Weather forecasts client
+
+We have more or less been through how to implement a new client, as we did it for greet.proto.
+
+* We copy over the weather.proto file.
+* We edit the csproj for the weather.proto file.
+* We build the solution to get auto generated code.
+* We use the auto generated client to call the server.
+
+Only thing different from greet is now we are receiving a stream of data instead of a single result. This will let us play around with a "new" c# 8 feature [Async Enumerables](https://docs.microsoft.com/en-us/archive/msdn-magazine/2019/november/csharp-iterating-with-async-enumerables-in-csharp-8).
+
+```csharp
+using Google.Protobuf.WellKnownTypes;
+using Grpc.Core;
+using Grpc.Net.Client;
+using System;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
+using TopSwagCode.GRPC.Server;
+using static TopSwagCode.GRPC.Server.Greeter;
+using static WeatherForecast.WeatherForecasts;
+
+namespace TopSwagCode.GRPC.Client
+{
+    class Program
+    {
+        static async Task Main(string[] args)
+        {
+            // The port number(5001) must match the port of the gRPC server.
+            using var channel = GrpcChannel.ForAddress("https://localhost:5001");
+
+            await GreeterRequest(channel);
+            await WeatherForecastsRequest(channel);
+        }
+
+        private static async Task GreeterRequest(GrpcChannel channel)
+        {
+            var client = new GreeterClient(channel);
+            var reply = await client.SayHelloAsync(
+                                new HelloRequest { Name = "GreeterClient" });
+            Console.WriteLine("Greeting: " + reply.Message);
+            Console.WriteLine("Press any key to continue...");
+
+            Console.ReadKey();
+        }
+        private static async Task WeatherForecastsRequest(GrpcChannel channel)
+        {
+            var client = new WeatherForecastsClient(channel);
+
+            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2)); // If slower than 2 seconds. Stop request.
+            var streamingCall = client.GetWeatherStream(new Empty(), cancellationToken: cts.Token);
+
+            try
+            {
+                await foreach (var weatherData in streamingCall.ResponseStream.ReadAllAsync(cancellationToken: cts.Token))
+                {
+                    Console.WriteLine($"{weatherData.DateTimeStamp.ToDateTime():s} | {weatherData.Summary} | {weatherData.TemperatureC} C");
+                }
+            }
+            catch (RpcException ex) when (ex.StatusCode == StatusCode.Cancelled)
+            {
+                Console.WriteLine("Stream cancelled.");
+            }
+            catch (IOException) // https://github.com/dotnet/runtime/issues/1586
+            {
+                Console.WriteLine("Client and server disagree on active stream count.");
+            }
+
+            Console.WriteLine("Press any key to exit...");
+            Console.ReadKey();
+        }
+    }
+}
+```
+
+Running client and server should result in something like the following
+
+![stream](assets/stream.gif)
+
+In the above example we can see we create a client that get's as much data as possible in a 2 second timespan. If the server is not done in those 2 seconds we get and RpcException with StatusCode Cancelled. Sadly as of creating this repository there is an open issue on HTTP/2, that forces us to also catch IOException.
+
