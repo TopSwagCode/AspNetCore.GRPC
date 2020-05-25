@@ -32,6 +32,7 @@ namespace TopSwagCode.GRPC.Server
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapGrpcService<GreeterService>();
+                endpoints.MapGrpcService<WeatherForecastService>();
 
                 endpoints.MapGet("/", async context =>
                 {
