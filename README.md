@@ -9,7 +9,14 @@
     * [Server](#Server)
     * [Client](#Client)
 * [Advanced](#Advanced)
-
+    * [Topics](#Topics)
+        * [Server streaming RPC](#server-streaming-rpc)
+        * [Client streaming RPC](#client-streaming-rpc)
+        * [Bidirectional streaming RPC](#bidirectional-streaming-rpc)
+    * [Server streaming RPC - Server](#server-streaming-rpc---server)
+    * [Server streaming RPC - Client](#server-streaming-rpc---client)
+* [Auth](#Auth)
+* [Wrapping up](#wrapping-up)
 
 # Overview
 
