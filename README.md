@@ -2,7 +2,16 @@
 
 ![grpc](assets/grpc.jpg)
 
-## Overview
+# Table of Contents
+
+* [Overview](#Overview)
+* [Working with gRPC in Dotnet Core](#Working-with-gRPC-in-Dotnet-Core)
+    * [Server](#Server)
+    * [Client](#Client)
+* [Advanced](#Advanced)
+
+
+# Overview
 
 gRPC is an open source remote procedure call (RPC) system initially developed at Google in 2015. gRPC does not! stand for Google Remote Procedure Call, but "gRPC Remote Procedure Calls". Below I have quoted their own page to give a small overview of what it is.
 
@@ -16,9 +25,9 @@ Quotes taken from [gRPC.io](https://grpc.io/docs/guides/)
 
 I won't spend any time describing the performance of gRPC. There is an awesome blog post by Auth0 that can be read [here.](https://auth0.com/blog/beating-json-performance-with-protobuf/)
 
-## Working with gRPC in Dotnet Core.
+# Working with gRPC in Dotnet Core
 
-### Server
+## Server
 
 We can start by using the default gRPC template that dotnet provides us.
 
@@ -119,7 +128,7 @@ Last thing to check out is how routing is handled. You can find this in Startup.
     }
 ```
 
-### Client
+## Client
 
 Well doesn't make much sense to create a gRPC server without also showing how to interact with it. We can start by creating a simple Console app.
 
@@ -179,9 +188,11 @@ Running client and server should result in something like the following
 
 ![request response](assets/requestresponse.png)
 
-## Advanced
+# Advanced
 
 So far I have described the "simple" hello world example. But gRPC has so much more to offer like: 
+
+## Topics
 
 ### Server streaming RPC
 
@@ -197,7 +208,7 @@ So far I have described the "simple" hello world example. But gRPC has so much m
 >
 >Client- and server-side stream processing is application specific. Since the two streams are independent, the client and server can read and write messages in any order. For example, a server can wait until it has received all of a client’s messages before writing its messages, or the server and client can play “ping-pong” – the server gets a request, then sends back a response, then the client sends another request based on the response, and so on.
 
-### Example Streaming Weather forecasts server
+## Server streaming RPC - Server
 
 In this repository I am showing how Server streaming RPC works. I have implemented a simple WeatherForecasts demo that shows a stream of weather forecasts from server to client. Starting with server code first. I will create a new .proto file in the Protos folder. The file will be named `weather.proto`, that looks like the this:
 
@@ -320,7 +331,7 @@ Only one thing left now and that is the route mapping for the weather forecasts 
     });
 ```
 
-### Example Streaming Weather forecasts client
+## Server streaming RPC - Client
 
 We have more or less been through how to implement a new client, as we did it for greet.proto.
 
@@ -401,6 +412,11 @@ In the above example we can see we create a client that gets as much data as pos
 Running client and server should result in something like the following
 
 ![stream](assets/stream.gif)
+
+# Auth
+
+
+# Wrapping up
 
 I hope this has helped you get started with gRPC with Aspnet Core. Either if you are creating your own service or have to implement a client for an existing service.
 
