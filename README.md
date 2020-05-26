@@ -2,7 +2,25 @@
 
 ![grpc](assets/grpc.jpg)
 
-## Overview
+# Table of Contents
+
+* [Overview](#Overview)
+* [Working with gRPC in Dotnet Core](#Working-with-gRPC-in-Dotnet-Core)
+    * [Server](#Server)
+    * [Client](#Client)
+* [Advanced](#Advanced)
+    * [Topics](#Topics)
+        * [Server streaming RPC](#server-streaming-rpc)
+        * [Client streaming RPC](#client-streaming-rpc)
+        * [Bidirectional streaming RPC](#bidirectional-streaming-rpc)
+    * [Server streaming RPC - Server](#server-streaming-rpc---server)
+    * [Server streaming RPC - Client](#server-streaming-rpc---client)
+* [Authentication and authorization](#Authentication-and-authorization)
+    * [Secure Server](#Secure-Server)
+    * [Secure Client](#Secure-Client)
+* [Wrapping up](#wrapping-up)
+
+# Overview
 
 gRPC is an open source remote procedure call (RPC) system initially developed at Google in 2015. gRPC does not! stand for Google Remote Procedure Call, but "gRPC Remote Procedure Calls". Below I have quoted their own page to give a small overview of what it is.
 
@@ -16,9 +34,9 @@ Quotes taken from [gRPC.io](https://grpc.io/docs/guides/)
 
 I won't spend any time describing the performance of gRPC. There is an awesome blog post by Auth0 that can be read [here.](https://auth0.com/blog/beating-json-performance-with-protobuf/)
 
-## Working with gRPC in Dotnet Core.
+# Working with gRPC in Dotnet Core
 
-### Server
+## Server
 
 We can start by using the default gRPC template that dotnet provides us.
 
@@ -119,7 +137,7 @@ Last thing to check out is how routing is handled. You can find this in Startup.
     }
 ```
 
-### Client
+## Client
 
 Well doesn't make much sense to create a gRPC server without also showing how to interact with it. We can start by creating a simple Console app.
 
@@ -179,9 +197,11 @@ Running client and server should result in something like the following
 
 ![request response](assets/requestresponse.png)
 
-## Advanced
+# Advanced
 
 So far I have described the "simple" hello world example. But gRPC has so much more to offer like: 
+
+## Topics
 
 ### Server streaming RPC
 
@@ -197,7 +217,7 @@ So far I have described the "simple" hello world example. But gRPC has so much m
 >
 >Client- and server-side stream processing is application specific. Since the two streams are independent, the client and server can read and write messages in any order. For example, a server can wait until it has received all of a client’s messages before writing its messages, or the server and client can play “ping-pong” – the server gets a request, then sends back a response, then the client sends another request based on the response, and so on.
 
-### Example Streaming Weather forecasts server
+## Server streaming RPC - Server
 
 In this repository I am showing how Server streaming RPC works. I have implemented a simple WeatherForecasts demo that shows a stream of weather forecasts from server to client. Starting with server code first. I will create a new .proto file in the Protos folder. The file will be named `weather.proto`, that looks like the this:
 
@@ -320,7 +340,7 @@ Only one thing left now and that is the route mapping for the weather forecasts 
     });
 ```
 
-### Example Streaming Weather forecasts client
+## Server streaming RPC - Client
 
 We have more or less been through how to implement a new client, as we did it for greet.proto.
 
@@ -401,6 +421,174 @@ In the above example we can see we create a client that gets as much data as pos
 Running client and server should result in something like the following
 
 ![stream](assets/stream.gif)
+
+# Authentication and authorization
+
+So now that you are an expert in sending and receiving gRPC messages. The next clear step is to think about security. The great thing about gRPC is that auth is damn near identical to WebAPI auth. Some of the supported options are:
+
+* Azure Active Directory
+* Client Certificate
+* IdentityServer
+* JWT Token
+* OAuth 2.0
+* OpenID Connect
+* WS-Federation
+
+In this repository there are 2 projects for secure server / client. They have been implemented using Bearer token authentication. Below you can see what changes are needed to implement it.
+
+## Secure Server
+
+I will try to keep the Secure server simple and implement a hardcoded endpoint `/generateJwtToken` that returns a token we can use to authenticate with from the client. The way we create the token isn't really important part of this repository. Starting out we need to edit the Startup.cs to `AddAuthorization()` and `AddAuthentication()`. Just like you would do with a normal API. 
+
+```csharp
+    public void ConfigureServices(IServiceCollection services)
+    {
+        services.AddGrpc();
+
+        services.AddAuthorization(options =>
+        {
+            options.AddPolicy(JwtBearerDefaults.AuthenticationScheme, policy =>
+            {
+                policy.AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme);
+                policy.RequireClaim(ClaimTypes.Name);
+            });
+        });
+        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters =
+                    new TokenValidationParameters
+                    {
+                        ValidateAudience = false,
+                        ValidateIssuer = false,
+                        ValidateActor = false,
+                        ValidateLifetime = true,
+                        IssuerSigningKey = SecurityKey
+                    };
+            });
+    }
+```
+
+And then edit the Configure part to actually use authentication and authorization.
+
+```csharp
+    public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+    {
+        if (env.IsDevelopment())
+        {
+            app.UseDeveloperExceptionPage();
+        }
+
+        app.UseRouting();
+
+        app.UseAuthentication();
+        app.UseAuthorization();
+
+        app.UseEndpoints(endpoints =>
+        {
+            endpoints.MapGrpcService<GreeterService>();
+            endpoints.MapGrpcService<WeatherForecastService>();
+
+            endpoints.MapGet("/generateJwtToken", context =>
+            {
+                return context.Response.WriteAsync(GenerateJwtToken(context.Request.Query["name"]));
+            });
+        });
+    }
+```
+
+Well. That wasn't a pain at all. Ahhh shit. We still need to update the gRPC services for Greet and WeatherForecasts. I Bet that is going to take a lot of boiler plate code. 
+
+```csharp
+[Authorize]
+public class GreeterService : Greeter.GreeterBase
+{....}
+
+[Authorize]
+public class WeatherForecastService : WeatherForecasts.WeatherForecastsBase
+{....}
+```
+
+If you are used to creating API's with secure endpoints, you will feel just like home here.
+
+![Nice](assets/usual.png)
+
+## Secure Client 
+
+When it comes to the client for secure messages. Well, I am sorry to tell you. It is just as easy as the server part was. You have 2 options to to send the token to the server.
+
+Option A)
+
+Adding the token to the Metadata (header) on each request.
+
+```csharp
+    private static async Task GreeterRequest(GrpcChannel channel, string token)
+    {
+        var headers = new Metadata();
+        headers.Add("Authorization", $"Bearer {token}");
+
+        var client = new GreeterClient(channel);
+        var reply = await client.SayHelloAsync(new HelloRequest { Name = "GreeterClient" }, headers);
+    }
+```
+
+Option B)
+
+Create an authenticated channel, which appends your metadata to all requests on that channel
+
+```csharp
+    private static GrpcChannel CreateAuthenticatedChannel(string address, string token)
+    {
+        var credentials = CallCredentials.FromInterceptor((context, metadata) =>
+        {
+            metadata.Add("Authorization", $"Bearer {token}");
+            return Task.CompletedTask;
+        });
+
+        // SslCredentials is used here because this channel is using TLS.
+        // CallCredentials can't be used with ChannelCredentials.Insecure on non-TLS channels.
+        var channel = GrpcChannel.ForAddress(address, new GrpcChannelOptions
+        {
+            Credentials = ChannelCredentials.Create(new SslCredentials(), credentials)
+        });
+        return channel;
+    }
+
+    private static async Task GreeterRequestWithSecureChannel(GrpcChannel channel)
+    {
+        var client = new GreeterClient(channel);
+        var reply = await client.SayHelloAsync(new HelloRequest { Name = "GreeterClient" });
+    }
+
+    private static async Task WeatherForecastsRequestWithSecureChannel(GrpcChannel channel)
+    {
+        //... same same
+    }
+
+    static async Task Main(string[] args)
+    {
+        var token = await LoginRequest();
+
+        using var secureChannel = CreateAuthenticatedChannel("https://localhost:5001", token);
+
+        await GreeterRequestWithSecureChannel(secureChannel);
+        await WeatherForecastsRequestWithSecureChannel(secureChannel);
+
+        Console.WriteLine("Press any key to exit...");
+        Console.ReadKey();
+    }
+```
+Running client and server should result in something like the following
+
+![secure](assets/secure.png)
+
+* We start out making insecure call that fails! Hurray!.
+* We make a gRPC call to greeter with bearer token in metadata
+* We make a gRPC call to weather forecasts with bearer token in metadata
+* We make a gRPC call to greeter with bearer token populated by channel
+* We make a gRPC call to weather forecasts with bearer token populated by metadata
+
+# Wrapping up
 
 I hope this has helped you get started with gRPC with Aspnet Core. Either if you are creating your own service or have to implement a client for an existing service.
 
