@@ -59,8 +59,6 @@ namespace TopSwagCode.GRPC.Client.Secure
                 var reply = await client.SayHelloAsync(new HelloRequest { Name = "GreeterClient" });
 
                 Console.WriteLine("Greeting: " + reply.Message);
-                Console.WriteLine("Press any key to continue...");
-                Console.ReadKey();
             }
             catch(Grpc.Core.RpcException ex) when (ex.StatusCode == StatusCode.Unauthenticated)
             {
@@ -72,7 +70,6 @@ namespace TopSwagCode.GRPC.Client.Secure
 
         private static async Task GreeterRequest(GrpcChannel channel, string token)
         {
-
             var headers = new Metadata();
             headers.Add("Authorization", $"Bearer {token}");
 
@@ -80,8 +77,6 @@ namespace TopSwagCode.GRPC.Client.Secure
             var reply = await client.SayHelloAsync(new HelloRequest { Name = "GreeterClient" }, headers);
 
             Console.WriteLine("Greeting: " + reply.Message);
-            Console.WriteLine("Press any key to continue...");
-            Console.ReadKey();
         }
 
         private static async Task WeatherForecastsRequest(GrpcChannel channel, string token)
@@ -118,8 +113,6 @@ namespace TopSwagCode.GRPC.Client.Secure
             var reply = await client.SayHelloAsync(new HelloRequest { Name = "GreeterClient" });
 
             Console.WriteLine("Greeting: " + reply.Message);
-            Console.WriteLine("Press any key to continue...");
-            Console.ReadKey();
         }
 
         private static async Task WeatherForecastsRequestWithSecureChannel(GrpcChannel channel)

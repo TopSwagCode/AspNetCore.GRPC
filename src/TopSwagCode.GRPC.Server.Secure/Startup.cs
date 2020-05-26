@@ -14,8 +14,6 @@ namespace TopSwagCode.GRPC.Server.Secure
 {
     public class Startup
     {
-        public static string Key => "kV8aOW32PfSf+0KDAQZGhLL9pYRnifQp3ESj1D9RMv8=";
-
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddGrpc();
