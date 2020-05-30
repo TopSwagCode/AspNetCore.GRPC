@@ -1,0 +1,211 @@
+<!doctype html>
+<html>
+	<head>
+		<style>
+			.container{
+				display: flex;
+			}
+			.col{
+				flex: 1;
+			}
+			</style>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>reveal.js</title>
+
+		<link rel="stylesheet" href="dist/reset.css">
+		<link rel="stylesheet" href="dist/reveal.css">
+		<link rel="stylesheet" href="dist/theme/black.css" id="theme">
+
+		<!-- Theme used for syntax highlighted code -->
+		<link rel="stylesheet" href="plugin/highlight/monokai.css" id="highlight-theme">
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section>
+					<img width="200px" src="NET_Core_Logo.svg" />
+					<img width="200px" src="grpc-icon-color.png" />
+				</section>
+				<section>
+					<p> Who Am I? </p>
+					<p>
+						<ul>
+						<li>Loving boyfriend and father</li>
+						<li>Code enthusiast</li>
+						<li>Sharerer of code</li>
+						<li>Cat owner</li>
+						<li>Table top gamer</li>
+						</ul>
+					</p>
+				</section>
+				<section>
+					<p> What do I do? </p>
+					<p class="fragment">
+						<img src="magic.webp">
+					</p>
+				</section>
+				<section>
+					<p> What do I do? </p>
+					<p>
+						Spam about me.
+					</p>
+				</section>
+				<section>
+					<p> What is gRPC?</p>
+					<p>
+						Spam about me.
+					</p>
+				</section>
+				<section>
+					<p> gRPC vs RestAPI</p>
+					<table>
+						<thead><tr>
+							<th>Feature</th>
+							<th>gRPC</th>
+							<th>HTTP APIs with JSON</th>
+						</tr></thead>
+						<tbody>
+						<tr>
+							<td>Contract</td>
+							<td>Required (.proto)</td>
+							<td>Optional (OpenAPI)</td>
+						</tr>
+						<tr>
+							<td>Protocol</td>
+							<td>HTTP/2</td>
+							<td>HTTP</td>
+						</tr>
+						<tr>
+							<td>Payload</td>
+							<td>Protobuf (small, binary)</td>
+							<td>JSON (large, human readable)</td>
+						</tr>
+						<tr>
+							<td>Prescriptiveness</td>
+							<td>Strict specification</td>
+							<td>Loose. Any HTTP is valid</td>
+						</tr>
+						<tr>
+							<td>Streaming</td>
+							<td>Client, server, bi-directional</td>
+							<td>Client, server</td>
+						</tr>
+						<tr>
+							<td>Browser support</td>
+							<td>No (requires grpc-web)</td>
+							<td>Yes</td>
+						</tr>
+						<tr>
+							<td>Security</td>
+							<td>Transport (TLS)</td>
+							<td>Transport (TLS)</td>
+						</tr>
+						<tr>
+							<td>Client code-generation</td>
+							<td>Yes</td>
+							<td>OpenAPI + third-party tooling</td>
+						</tr>
+					</tbody>
+					</table>
+				</section>
+				<section>
+					What is it good for?
+				</section>
+				<section>
+					Downsides
+				</section>
+				<section>
+					Hello World
+				</section>
+				<section>
+					Live Coding
+				</section>
+				<section>
+					Code samples Auth
+					<pre><code data-line-numbers="3,8-10">
+					
+public void ConfigureServices(IServiceCollection services)
+{
+	services.AddGrpc();
+
+	services.AddAuthorization(options =>
+	{
+		options.AddPolicy(JwtBearerDefaults.AuthenticationScheme, policy =>
+		{
+			policy.AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme);
+			policy.RequireClaim(ClaimTypes.Name);
+		});
+	});
+	services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+		.AddJwtBearer(options =>
+		{
+			options.TokenValidationParameters =
+				new TokenValidationParameters
+				{
+					ValidateAudience = false,
+					ValidateIssuer = false,
+					ValidateActor = false,
+					ValidateLifetime = true,
+					IssuerSigningKey = SecurityKey
+				};
+		});
+}
+
+public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+{
+	if (env.IsDevelopment())
+	{
+		app.UseDeveloperExceptionPage();
+	}
+
+	app.UseRouting();
+
+	app.UseAuthentication();
+	app.UseAuthorization();
+
+	app.UseEndpoints(endpoints =>
+	{
+		endpoints.MapGrpcService<GreeterService>();
+		endpoints.MapGrpcService<WeatherForecastService>();
+
+		endpoints.MapGet("/generateJwtToken", context =>
+		{
+			return context.Response.WriteAsync(GenerateJwtToken(context.Request.Query["name"]));
+		});
+	});
+}
+						
+					</code></pre>
+				</section>
+				<section>
+					Code Streams
+
+				</section>
+				<section>
+					Performance
+				</section>
+				<section>
+					Thats all
+				</section>
+			</div>
+		</div>
+
+		<script src="dist/reveal.js"></script>
+		<script src="plugin/notes/notes.js"></script>
+		<script src="plugin/markdown/markdown.js"></script>
+		<script src="plugin/highlight/highlight.js"></script>
+		<script>
+			// More info about initialization & config:
+			// - https://revealjs.com/initialization/
+			// - https://revealjs.com/config/
+			Reveal.initialize({
+				hash: true,
+
+				// Learn about plugins: https://revealjs.com/plugins/
+				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
+			});
+		</script>
+	</body>
+</html>
