@@ -1,4 +1,4 @@
-# GRPC.DotnetCore
+# AspNetCore.GRPC
 
 ![grpc](assets/grpc.jpg)
 
